@@ -1,3 +1,45 @@
+/*
+ * 该示例主要流程分为三个步骤
+ * 1. 首先调用公交路线查询服务(lineSearch)
+ * 2. 根据返回结果解析，输出解析结果(lineSearch_Callback)
+ * 3. 在地图上绘制公交线路()
+ */
+var resLine  = ''; //结果表格对象
+
+var map = new AMap.Map("mapContainer", {
+	resizeEnable: true,
+    view: new AMap.View2D({
+    center:new AMap.LngLat(116.397428,39.90923),//地图中心点
+    zoom:13 //地图显示的缩放级别
+    })
+});
+
+/*
+ *清空地图覆盖物与查询结果
+ */
+function mapclear() {
+    btContent = '';
+    resLine   = '';
+    map.clearMap();
+}
+
+/**
+ * 在地图上画出所有点
+ * 
+ * @param arr
+ * 			点坐标集合[[lng, lat], [lng, lat], ...]
+ */
+function addMarker(arr) {
+	for(var i = 0 ; i < arr.length ; i++) {
+		marker = new AMap.Marker({
+			icon: "http://webapi.amap.com/images/marker_sprite.png",
+			position: [arr[i][0], arr[i][1]]
+		});
+		marker.setMap(map); // 在地图上添加点
+	}
+
+	map.setFitView(); // 调整到合理视野
+}
 
 /**
  * 通过读取textarea里公交线路名称搜索
@@ -87,11 +129,48 @@ function lineSearch(roadLineName) {
 
 var testList = "123路拥军线:悦民路,麒麟门新大街,锦绣花园,麒麟山庄,西村,东郊小镇,晨光,金丝岗,孟庄,锁石村,孟北,坟头,候家塘,黄栗墅,张肖庄西站,张肖庄,汤山溶洞,汤山西站,汤山中学,汤山站,汤山东站,陈达村,汤山汽运六队,作厂,南京炮院站,经三路,西营房,新北路,东营房";
 
-function batchStationSearch() {
+var stationsMap = new HashMap();
+
+/**
+ * 公交线路，数组对象，其中lines[0]为线路名称，如["123路拥军线", "悦民路", "麒麟门新大街", ...]
+ * 
+ * @param nameList
+ */
+function batchStationSearch(nameList) {
 	var stationName;
 	//查询内存中是否存在该公交站点名称，若没有则向高德API发起请求
-	
+	for(var i = 1 ; i < nameList.length ; i++) {
+		if(stationsMap.containsKey(nameList[i])) {
+			var st = stationsMap.get(nameList[i]);
+			//在地图上画出该站点的所有位置
+			addMarker(getPoints(st));
+		} else {
+			stationSearch(nameList[i]);
+			
+		}
+	}
 	//获取站点详细信息
+}
+
+function singleStationSearch(name) {
+	var stationName;
+	//查询内存中是否存在该公交站点名称，若没有则向高德API发起请求
+	for(var i = 1 ; i < nameList.length ; i++) {
+		if(stationsMap.containsKey(nameList[i])) {
+			var st = stationsMap.get(nameList[i]);
+			//在地图上画出该站点的所有位置
+			addMarker(getPoints(st));
+		} else {
+			stationSearch(nameList[i]);
+			
+		}
+	}
+	//获取站点详细信息
+}
+
+function stationSearchCallBak(name, st) {
+	stationsMap.put(name, st);
+	addMarker(getPoints(st));
 }
 
 /**
@@ -119,6 +198,7 @@ function extractDetail(stationName, lines, stationObj) {
  * 
  * @param stationName
  */
+var stationtest ;
 function stationSearch(stationName) {
 	
     var MSearch;
@@ -132,14 +212,13 @@ function stationSearch(stationName) {
         //关键字查询
         MSearch.search(stationName, function(status, result){
         	console.log(JSON.stringify(result));
+        	stationtest = result;
         	if(status === 'complete' && result.info === 'OK'){
-//        		stations.map = 
+        		stationSearchCallBak(stationName, result);
         	}
         }); 
     });
 }
-
-var stations = new Stations();
 
 function Stations() {
 	/**
@@ -148,13 +227,6 @@ function Stations() {
 	 */
 	this.map = new HashMap();
 	
-	this.add = function(stationName) {
-		if(map.containsKey(stationName)) {
-			return true;
-		} else {
-			
-		}
-	} 
 }
 
 function Lines() {
@@ -165,19 +237,30 @@ function Lines() {
 	this.map = new HashMap();
 }
 
-function Station(ob) {
-	//station对象，对应高德地图类型 StationSearchResult http://lbs.amap.com/api/javascript-api/reference/search_plugin/#m_StationSearchResult
-	var st = ob;
-	
-	var id = map.size();
-	
-	/**
-	 * 根据
-	 */
-	this.search = function(lineList) {
+/**
+ * 返回高德API stationInfo对象中第一条buslines的所有不同点
+ * 
+ * @param st
+ * @returns {Array}
+ */
+function getPoints(st) {
+	var buslines = st.stationInfo[0].buslines;
+	var points = [];
+	for(var i = 0 ; i < buslines.length ; i++) {
+		var tmpPoint = [buslines[i].location.lng, buslines[i].location.lat];
+		var hasP = false;
+		for(var j = 0 ; j < points.length ; j++) {
+			if(points[j][0] == tmpPoint[0] && points[j][1] == tmpPoint[1]) {
+				hasP = true;
+				break;
+			}
+		}
+		if(!hasP) {
+			points.push(tmpPoint);
+		}
 		
 	}
-
+	return points;
 }
 
 function Line() {

@@ -1,0 +1,21 @@
+body {
+	overflow: hidden;
+}
+
+#optionContainer {
+    width: 300px;
+    height: 100%;
+    z-index: 2;
+    margin: 0px;
+    position: absolute;
+    overflow-y: scroll;
+}
+
+#mapContainer{
+	position: absolute;
+	top:0;
+	left: 0;
+	right:0;
+	bottom:0;
+	margin-left: 308px;
+}

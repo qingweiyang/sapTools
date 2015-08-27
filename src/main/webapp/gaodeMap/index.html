@@ -9,7 +9,19 @@
 	<link href="m.css" rel="stylesheet">
 </head>
 <body>
-<div id="optionContainer"><input></div>
+<div id="optionContainer">
+	<div class="option">
+		<button onclick="mapclear();">清空地图覆盖物与查询结果</button>
+	</div>
+	<div class="option">
+		<textarea id="option1" style="height: 40px; width: 90%;"></textarea>
+		<button onclick="batchStationSearch();">画出所有station的所有可能点</button>
+	</div>
+	<div class="option">
+		<textarea id="option2" style="height: 30px; width: 90%;"></textarea>
+		<button onclick="lineSearch();">根据路线名画线路</button>
+	</div>
+</div>
 <div id="mapContainer"></div>
 <!--  
     <div id="mapContainer"></div>

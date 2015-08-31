@@ -33,21 +33,11 @@ function addMarker(obj) {
 //	var markers = [];
 	for(var i = 0 ; i < obj.length ; i++) {
 		var marker = new AMap.Marker({
-			map: map,
+			map: map, //将点添加到地图
 			icon: "http://webapi.amap.com/images/marker_sprite.png",
-			position: obj[i].lnglat
+			position: obj[i].lnglat, //相对于基点的位置
+			draggable: true //添加点标记可拖拽
 		});
-		
-		//当触发mouseover事件时,换个皮肤
-//		AMap.event.addListener(marker,"mouseover",function(){
-//			console.log(marker);
-//		    console.log("mouseover");
-//		});
-//		//当触发mouseout事件时,换回皮肤
-//		AMap.event.addListener(marker,"mouseout",function(){
-//		 
-//		    console.log("mouseout");
-//		});
 		
 		var info = [];    
 		info.push("站台名称 ： " + obj[i].stationName);
@@ -66,38 +56,14 @@ function addMarker(obj) {
 			});
 		})(inforWindow, marker);
 		
-//		markers.push(marker);
 	}
 
-//	console.log(markers);
 	map.setFitView(); // 调整到合理视野
-}
-
-function test() {
-	//构建点对象                 
-	var marker = new AMap.Marker({                 
-	  map:mapObj, //将点添加到地图                 
-	  position:new AMap.LngLat(116.373881,39.907409),                    
-	  icon:" http://webapi.amap.com/images/0.png  ",//marker图标，直接传递地址url                 
-	  offset:new AMap.Pixel(-10,-35) //相对于基点的位置                 
-	});                 
-	               
-	var info = [];                 
-	info.push("<b>  高德软件</b>");                 
-	info.push("  电话 :  010-84107000   邮编 : 100102");                 
-	info.push("  地址 : 北京市望京阜通东大街方恒国际中心A座16层");                 
-	               
-	var inforWindow = new AMap.InfoWindow({                 
-	  offset:new AMap.Pixel(0,-23),                 
-	  content:info.join("<br>")                 
-	});                 
-	AMap.event.addListener(marker,"click",function(e){                 
-	  inforWindow.open(mapObj,marker.getPosition());                 
-	}); 
 }
 
 /**
  * 通过读取textarea里公交线路名称搜索
+ * 
  */
 function searchAll() {
 	var list = $("#roadNames").val();
@@ -144,48 +110,6 @@ function toCoordinates(item) {
 } 
 
 /*
- *公交线路查询
- */
-function lineSearch() {
-	var roadLineName = $("#option2").val();
-    //加载公交线路查询插件
-    //实例化公交线路查询类，只取回一条路线
-    AMap.service(["AMap.LineSearch"], function() {
-       var linesearch = new AMap.LineSearch({
-            pageIndex:1,
-            city:'南京',
-            pageSize:1,
-            extensions:'all'
-        });
-       
-        linesearch.search(roadLineName, function(status, result){
-//        	 console.log(JSON.stringify(result));
-        	if(status === 'complete' && result.info === 'OK'){
-        		for(var i = 0 ; i < result.lineInfo.length ; i++) {
-        			lineSearch_Callback(result);
-        			
-        			//以下用来自己输出文件的、。。
-        			roadList += result.lineInfo[i].id + ",";
-        			roadList += "\"" + result.lineInfo[i].name + "\"" + ",";
-        			roadList += "\"" + toLinestr(result.lineInfo[i].path)+ "\"" + "\n";
-        			//经过的站台信息
-        			for(var j = 0 ; j < result.lineInfo[i].via_stops.length ; j++) {
-        				stationList += "\"" + result.lineInfo[i].via_stops[j].id + "\"" + ",";
-        				stationList += result.lineInfo[i].id + ",";
-        				stationList += "\"" + result.lineInfo[i].via_stops[j].name+ "\"" + ",";
-        				stationList += result.lineInfo[i].via_stops[j].sequence+ "\n";
-        			}
-        		}
-        		
-        		
-        	}else{
-        		unfoundList += roadLineName + ",\n";
-        	}
-        });
-    });
-}
-
-/*
  * 公交路线查询服务返回数据解析概况
  * param Array[]  lineArr     返回公交线路总数
  * param String   lineName    公交线路名称
@@ -220,8 +144,12 @@ function lineSearch_Callback(data) {
     }
 }
 
-/*
- *绘制路线
+/**
+ * 绘制路线
+ * 
+ * @param startPot
+ * @param endPot
+ * @param BusArr
  */
 function drawbusLine(startPot,endPot,BusArr) {
     //自定义起点，终点图标
@@ -306,51 +234,6 @@ function stationSearchCallBak(name, st) {
 }
 
 /**
- * 获取站点详细信息
- * 
- * @param stationName	
- * 			公交站点名称，这里是要匹配的名称
- * @param lines
- * 			公交线路，数组对象，其中lines[0]为线路名称，如["123路拥军线", "悦民路", "麒麟门新大街", ...]
- * @param stationObj
- * 			根据stationName从高德API中检索返回的结果
- */
-function extractDetail(stationName, lines, stationObj) {
-	//先从高德stationObj中获取路线匹配的所有结果集
-	var linesMatched = [];
-	var buslines = stationObj.stationInfo[0].buslines;
-	for(var i = 0 ; i < buslines.length ; i++) {
-		//对于一个line，获取高德lineInfo对象
-		
-	}
-}
-
-/**
- * 公交站点查询服务，根据输入关键字查询公交站点信息。
- * 
- * @param stationName
- */
-function stationSearch(stationName) {
-	
-    var MSearch;
-    AMap.service(["AMap.StationSearch"], function() {        
-        MSearch = new AMap.StationSearch({ //构造地点查询类
-            pageSize:10,
-            pageIndex:1,
-            city:"南京" //城市
-        });
-        console.log("in");
-        //关键字查询
-        MSearch.search(stationName, function(status, result){
-//        	console.log(JSON.stringify(result));
-        	if(status === 'complete' && result.info === 'OK'){
-        		stationSearchCallBak(stationName, result);
-        	}
-        }); 
-    });
-}
-
-/**
  * 返回高德API stationInfo对象中buslines的所有不同点
  * 
  * @param st
@@ -395,4 +278,94 @@ function getPoints(st) {
 	}
 
 	return points;
+}
+
+//解析服务请求返回结果
+function routeCallBack(data) {
+ 
+}
+
+/**
+ * 公交站点查询服务，根据输入关键字查询公交站点信息。
+ * 
+ * @param stationName
+ */
+function stationSearch(stationName) {
+	
+    var MSearch;
+    AMap.service(["AMap.StationSearch"], function() {        
+        MSearch = new AMap.StationSearch({ //构造地点查询类
+            pageSize:10,
+            pageIndex:1,
+            city:"南京" //城市
+        });
+        console.log("in");
+        //关键字查询
+        MSearch.search(stationName, function(status, result){
+        	if(status === 'complete' && result.info === 'OK'){
+        		stationSearchCallBak(stationName, result);
+        	}
+        }); 
+    });
+}
+
+/*
+ *公交线路查询
+ *
+ */
+function lineSearch() {
+	var roadLineName = $("#option2").val();
+    //加载公交线路查询插件
+    //实例化公交线路查询类，只取回一条路线
+    AMap.service(["AMap.LineSearch"], function() {
+       var linesearch = new AMap.LineSearch({
+            pageIndex:1,
+            city:'南京',
+            pageSize:1,
+            extensions:'all'
+        });
+       
+        linesearch.search(roadLineName, function(status, result){
+//        	 console.log(JSON.stringify(result));
+        	if(status === 'complete' && result.info === 'OK'){
+        		for(var i = 0 ; i < result.lineInfo.length ; i++) {
+        			lineSearch_Callback(result);
+        			
+        			//以下用来自己输出文件的、。。
+        			roadList += result.lineInfo[i].id + ",";
+        			roadList += "\"" + result.lineInfo[i].name + "\"" + ",";
+        			roadList += "\"" + toLinestr(result.lineInfo[i].path)+ "\"" + "\n";
+        			//经过的站台信息
+        			for(var j = 0 ; j < result.lineInfo[i].via_stops.length ; j++) {
+        				stationList += "\"" + result.lineInfo[i].via_stops[j].id + "\"" + ",";
+        				stationList += result.lineInfo[i].id + ",";
+        				stationList += "\"" + result.lineInfo[i].via_stops[j].name+ "\"" + ",";
+        				stationList += result.lineInfo[i].via_stops[j].sequence+ "\n";
+        			}
+        		}
+        		
+        		
+        	}else{
+        		unfoundList += roadLineName + ",\n";
+        	}
+        });
+    });
+}
+
+function transferService() {
+	//根据起终点名称查询公交换乘
+    var keywords = [{keyword : '南堡公园'},{keyword : '金陵六村'}];
+    AMap.service('AMap.Transfer',function(){
+        transfer = new AMap.Transfer();
+        transfer.setCity('南京市');
+        transfer.search(keywords, function(status, data){
+        if(status === 'complete'){
+        	console.log(data);
+          routeCallBack(data);
+        }else{
+          document.getElementsByClassName('result')[0].style.display='block'
+          document.getElementById("list").innerHTML = '<error>'+data.info+'</error>';
+        }
+      });
+    });
 }

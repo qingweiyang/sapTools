@@ -280,11 +280,6 @@ function getPoints(st) {
 	return points;
 }
 
-//解析服务请求返回结果
-function routeCallBack(data) {
- 
-}
-
 /**
  * 公交站点查询服务，根据输入关键字查询公交站点信息。
  * 
@@ -352,19 +347,27 @@ function lineSearch() {
     });
 }
 
-function transferService() {
+function transferSearch() {
 	//根据起终点名称查询公交换乘
-    var keywords = [{keyword : '南堡公园'},{keyword : '金陵六村'}];
+	var words = $("#option3").val().split(",");
+//    var keywords = [{keyword : '南堡公园'},{keyword : '金陵六村'}];
+    var keywords = [{keyword : words[0]},{keyword : words[1]}];
     AMap.service('AMap.Transfer',function(){
         transfer = new AMap.Transfer();
         transfer.setCity('南京市');
         transfer.search(keywords, function(status, data){
         if(status === 'complete'){
-        	console.log(data);
-          routeCallBack(data);
-        }else{
-          document.getElementsByClassName('result')[0].style.display='block'
-          document.getElementById("list").innerHTML = '<error>'+data.info+'</error>';
+        	console.log(JSON.stringify(data));
+        	//返回对象格式 ： http://lbs.amap.com/api/javascript-api/reference/search_plugin/#m_TransferResult
+        	//对返回对象的BUS路线进行提取
+        	var plan = data.plans[0];
+        	for(var i = 0 ; i < plan.segments.length ; i++) {
+        		if("BUS" == plan.segments[i].transit_mode) {
+        			var path = plan.segments[i].transit.path;
+        			drawbusLine(path[0], path[path.length - 1], path);
+        			
+        		}
+        	}
         }
       });
     });

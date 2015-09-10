@@ -1,0 +1,44 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <style>
+    #ButtonDiv
+    {
+	    width: 500px;
+	    height: 500px;
+    }
+    </style>
+    <script>
+	$(function(){
+		
+		function runEffect() 
+		{
+		      $( "#ButtonDiv" ).show( "explode", options, 1500 );
+		};
+		
+	});
+	
+	function initialSet() {
+		window.open("map.html?isUpdation=0");
+	}
+	
+	function updateSet() {
+		window.open("map.html?isUpdation=1");
+	}
+
+	function manualSet() {
+		window.open("../manualMapTool/map.html");
+	}
+
+</script>
+</head>
+<body>
+<div id="ButtonDiv">
+	<button id=initial onclick="initialSet()">Initial</button>
+	<button id=update onclick="updateSet()">Update</button>
+	<button id=manual onclick="manualSet()">Manual</button>
+</div>
+
+
+</body>
+</html>

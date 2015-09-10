@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta charset="utf-8">
+    <style type="text/css">
+html {
+    height: 100%
+}
+
+body {
+    height: 100%;
+    margin: 0px;
+    padding: 0px
+}
+
+#panelContainer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 210px;
+    z-index: 999999999;
+    background: rgb(232, 232, 232);
+    opacity: 0.8;
+}
+
+#picker {
+    margin:0;
+    padding:0;
+    border:0;
+    width:70px;
+    height:20px;
+    border-right:20px solid green;
+    line-height:20px;
+}
+
+</style>
+    <script src="../js/OpenLayers-2.13.1/OpenLayers.js"></script>
+    <script src="../js/OpenLayers-2.13.1/OpenStreetMap.js"></script>
+    <script src="../js/jquery-2.0.3.min.js"></script>
+    <script src="../js/hashmap.js"></script>
+    <script src="../js/osm-map.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/jsts/javascript.util.js"></script>
+    <script src="../js/jsts/jsts.js"></script>
+    <script src="../js/color-picker/colpick.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="../js/color-picker/colpick.css" type="text/css"/>
+    <script type="text/javascript">
+    var map;
+    var layer = null;
+    var gpsProjection = new OpenLayers.Projection("EPSG:4326");
+    var layers = new HashMap();
+    var hoverLayer = null;
+    var wktReader = new jsts.io.WKTReader();
+    var wktWriter = new jsts.io.WKTWriter();
+    var parser = new jsts.io.OpenLayersParser();
+    var tilesLayer;
+    var fileReader = new FileReader();
+    var FileType = {
+        "JSON": "JSON",
+        "CSV": "CSV",
+        "Unknown": ""
+    };
+    //var predefinedSpeedColors = ["#FFB3A7","#F47983","#ED5736","#C93756","#8C4356","#C83C23","#9D2933","#FF2121"];
+    //var predefinedSpeedColors = ["red","orange","green","#93FF93","#53FF53","#00DB00","#00A600","#006000"];
+    var predefinedSpeedColors = ["red", "orange", "green", "green", "green", "green", "green", "green"];
+
+    function init() {
+
+        map = new OpenLayers.Map( 'map', {
+            controls : [ new OpenLayers.Control.Navigation(),
+                new OpenLayers.Control.PanZoomBar(),
+                new OpenLayers.Control.Permalink(),
+                new OpenLayers.Control.ScaleLine({ geodesic : true }),
+                new OpenLayers.Control.Permalink('permalink'),
+                new OpenLayers.Control.MousePosition(),
+                new OpenLayers.Control.Attribution() ],
+            numZoomLevels : 19,
+            units : 'm',
+            projection : new OpenLayers.Projection("EPSG:4326"),
+            displayProjection : new OpenLayers.Projection("EPSG:4326")
+        });
+        tilesLayer =new OpenLayers.Layer.OSM("Tiles",
+            //"http://a.tile.cloudmade.com/BC9A493B41014CAABB98F0471D759707/78603/256/${z}/${x}/${y}.png",
+            "http://b.tile.openstreetmap.org/${z}/${x}/${y}.png",
+            {
+                numZoomLevels : 19,
+                "tileOptions" : {"crossOriginKeyword" : null}
+            }
+        );
+        map.addLayer(tilesLayer);
+        layer = new OpenLayers.Layer.Vector("layer");
+        map.addLayer(layer);
+        setMapCenter(118.77, 32.04); // nanjing
+        //setMapCenter(102.6833,25.0667); // kunming
+        initHoverLayer();
+        addDoubleClickHandler();
+        addClickHandler();
+        panToByEnter();
+        initDragDrop();
+    }
+
+    //监听enter键，定位到#selections制定的点位置，点使用百度坐标（火星坐标）
+    function panToByEnter() {
+        $('#selections').bind('keyup', function(event) {
+        if (event.keyCode == "13") {
+            //回车执行查询
+            var point = $('#selections').val().replace(/(^\s*)/g, "");
+            var nanjing = new OpenLayers.LonLat(point.split(",")[1], point.split(",")[0]);
+            nanjing.transform(new OpenLayers.Projection("EPSG:4326"), new OpenLayers.Projection("EPSG:900913"));
+            map.zoomTo(18);
+            map.panTo(nanjing);
+        }
+    });
+    }
+
+    function initDragDrop() {
+        var div = document.getElementById('b');
+        div.ondragenter = div.ondragover = function (e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            return false;
+        }
+
+        div.ondrop = function (e) {
+            var file = e.dataTransfer.files[0];
+            if(file.size >  41457280){
+                alert("only handle file no more than 30MB!!!");
+            }
+            else {
+                fileReader.readAsText(file, "ascii");
+                fileReader.onload = function(e){
+                    handleFile(file.name, this.result);
+                }
+            }
+
+            e.preventDefault();
+            return false;
+        }
+    }
+
+    function addDoubleClickHandler() {
+        var DblclickFeature = OpenLayers.Class(OpenLayers.Control, {
+            initialize: function (layer, options) {
+                OpenLayers.Control.prototype.initialize.apply(this, [options]);
+                this.handler = new OpenLayers.Handler.Feature(this, layer, {
+                    dblclick: this.dblclick
+                });
+            }
+        });
+        var dblclick = new DblclickFeature(layer, {
+            dblclick: function (event) {
+
+                var append_text = null;
+                if (null !== event.properties && typeof(event.properties.way_id) !== 'undefined') {
+                    append_text = event.properties.way_id
+                }
+
+                if (null !== append_text) {
+                    if ($('#selections').val() !== "") {
+                        $('#selections').val($('#selections').val() + ",\n");
+                    }
+                    $('#selections').val($('#selections').val() + append_text);
+                }
+            }
+        });
+
+        map.addControl(dblclick);
+        dblclick.activate();
+    }
+
+    function addClickHandler() {
+        OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {                
+                defaultHandlerOptions: {
+                    'single': true,
+                    'double': false,
+                    'pixelTolerance': 0,
+                    'stopSingle': false,
+                    'stopDouble': false
+                },
+
+                initialize: function(options) {
+                    this.handlerOptions = OpenLayers.Util.extend(
+                        {}, this.defaultHandlerOptions
+                    );
+                    OpenLayers.Control.prototype.initialize.apply(
+                        this, arguments
+                    ); 
+                    this.handler = new OpenLayers.Handler.Click(
+                        this, {
+                            'click': this.trigger
+                        }, this.handlerOptions
+                    );
+                }, 
+
+                trigger: function(e) {
+                    var lonlat = map.getLonLatFromPixel(e.xy);
+                    console.log(lonlat);
+                    lonlat.transform(new OpenLayers.Projection("EPSG:900913"), new OpenLayers.Projection("EPSG:4326"));
+
+                    var append_text = null;
+                    append_text = lonlat.lat.toFixed(6) + "," + lonlat.lon.toFixed(6);
+                    $('#selections').val(append_text);
+                }
+
+            });
+
+                var click = new OpenLayers.Control.Click();
+                map.addControl(click);
+                click.activate();
+    }
+
+
+
+
+    function initHoverLayer(){
+        hoverLayer = new OpenLayers.Control.SelectFeature(layer, {
+            hover : true,
+            selectStyle : {
+                fillColor : "red",
+                stroke : true,
+                strokeColor : "red",
+                strokeWidth : 4,
+                fillOpacity : 0.5,
+                pointRadius : 6
+            },
+            onSelect : function(obj) {
+                var properties = "";
+                if(null != obj.properties){
+                    properties = JSON.stringify(obj.properties, null, 2);
+                }
+                $("#properties").text(properties);
+            }
+        });
+        map.addControl(hoverLayer);
+        hoverLayer.activate();
+    }
+
+    function setMapCenter(lon,lat){
+        map.setCenter(
+            new OpenLayers.LonLat(lon,lat).transform(
+                gpsProjection,
+                map.getProjectionObject()
+            ), 12
+        );
+    }
+
+    function destroyFeatures()
+    {
+        layer.destroyFeatures();
+    }
+
+    function checkPredefinedColor(color,properties,key)
+    {
+        if(key == "speed")
+        {
+            return checkPredefinedSpeedColor(color,properties);
+        }
+        else if (key == "color")
+        {
+            return properties.color;
+        }
+        return color;
+    }
+    function checkPredefinedSpeedColor(color,properties)
+    {
+        // TODO just for speed
+        if(properties.hasOwnProperty("speed"))
+        {
+            var speed = parseInt(properties.speed);
+            if(speed < 0)
+            {
+                speed = 0;
+            }
+            var index = speed < 70 ?parseInt(speed / 10):predefinedSpeedColors.length-1;
+            return predefinedSpeedColors[index];
+        }
+        return color;
+    }
+
+    function drawObj(obj){
+        var ret = true;
+        var isString = (typeof(obj) == "string");
+        var data = null;
+        if(isString){
+            try{
+                data = JSON.parse(obj, null, 4);
+            }catch(error){
+                console.log(error);
+                ret = false;
+            }
+        }else{
+            data = obj;
+        }
+
+        ret = typeof(data) == "object" && Object.prototype.toString.call(data).toLowerCase() == "[object object]" && !data.length;
+        if(ret){
+            var layerToDraw = layer;
+            if(data.createNewLayer == true){
+                var name = "layer-" + layer.size();
+                layerToDraw = new OpenLayers.Layer.Vector(name);
+                layers.put(name,layerToDraw);
+            }
+            var drawStyle = data.DrawStyle;
+            if(drawStyle == "geojson"){
+                var color ;
+                if(data.hasOwnProperty("color")){
+                    color = data.color;
+                }else{
+                    color = randomHexColor();
+                }
+
+                drawGeoJson(layerToDraw,data,color);
+            }else if(drawStyle == "EveryFeature"){
+                drawEveryFeature(layerToDraw,data);
+
+            }else if(drawStyle == "GroupFeature"){
+                drawGroupFeature(layerToDraw,data);
+            }
+            map.zoomToExtent(layerToDraw.getDataExtent());
+        }
+        return ret;
+    }
+
+    function drawGeoJson(layerToDraw,geoJson,color){
+        for(var i = 0; i < geoJson.features.length;i++){
+            drawFeature(layerToDraw, geoJson.features[i], color);
+        }
+    }
+
+    function drawEveryFeature(layerToDraw,geoJson){
+        for(var i = 0; i < geoJson.features.length;i++){
+            drawFeature(layerToDraw, geoJson.features[i], randomHexColor());
+        }
+    }
+
+    function drawGroupFeature(layerToDraw,geoJson){
+        var colorMap = new HashMap();
+        for(var i = 0; i < geoJson.features.length;i++){
+            var feature = geoJson.features[i];
+            var clusterId = feature.properties.clusterId;
+            if(!colorMap.containsKey(clusterId)){
+                colorMap.put(clusterId,randomHexColor());
+            }
+            drawFeature(layerToDraw, feature, colorMap.get(clusterId));
+        }
+    }
+
+    function drawFeature(layerToDraw,feature,color){
+        var properties = null;
+        var geometry = feature.geometry;
+        var coordinates = geometry.coordinates;
+        if(feature.hasOwnProperty("properties")){
+            properties = feature.properties;
+            //
+            if (properties.hasOwnProperty("color")) {
+                color = checkPredefinedColor(color,properties,"color");
+            } else if (properties.hasOwnProperty("speed")) {
+                color = checkPredefinedColor(color,properties,"speed");
+            }
+        }
+        if(geometry.type == "Point" ){
+            drawPoint(layerToDraw,coordinates[0],coordinates[1],properties,color);
+        }else if(geometry.type == "MultiPoint"){
+            for(var i = 0; i < coordinates.length;i++){
+                drawPoint(layerToDraw,coordinates[i][0],coordinates[i][1],properties,color);
+            }
+        }else if(geometry.type == "LineString"){
+            drawLineString(layerToDraw, coordinates, properties, color);
+        }else if(geometry.type == "MultiLineString"){
+            for(var i = 0; i < coordinates.length;i++){
+                drawLineString(layerToDraw, coordinates[i], properties, color);
+            }
+        }else if(geometry.type == "Polygon"){
+            drawPoygon(layerToDraw, coordinates, properties, color)
+        }else if(geometry.type == "MultiPolygon"){
+            for(var i = 0; i < coordinates.length;i++){
+                drawPoygon(layerToDraw, coordinates[i], properties, color);
+            }
+        }else if(geometry.type == "Tile"){
+            drawTile(layerToDraw, coordinates, properties, color);
+        }else if(geometry.type == "MultiTile"){
+            drawMultiTile(layerToDraw, coordinates, properties, color);
+        }else if(geometry.type == "PolygonTile"){
+            drawPolygonTile(layerToDraw,coordinates,properties,color);
+        }
+    }
+
+    function drawPolygonTile(layerToDraw,coordinates,properties,color){
+        // not enabled now
+        var merge = (properties.hasOwnProperty("merge") && properties.merge == true);
+        if(!merge){
+            drawMultiTile(layerToDraw, coordinates[0], properties, color);
+        }else{
+            var polygon = mergeTiles2JSTSPolygon(coordinates[0],properties.zoom);
+            var polygonPointsArray = [];
+            polygonPointsArray.push(JSTSCoordinates2Array(polygon.shell.points));
+            for(var i = 0; i < polygon.holes.length;i++){
+                polygonPointsArray.push(JSTSCoordinates2Array(polygon.holes[i]));
+            }
+            drawPoygon(layerToDraw,polygonPointsArray,properties,color);
+        }
+    }
+
+    function JSTSCoordinates2Array(coordinates) {
+        var pointsArray = [];
+        for(var i = 0; i < coordinates.length;i++){
+            pointsArray.push([coordinates[i].x,coordinates[i].y]);
+        }
+        return pointsArray;
+    }
+
+    function mergeTiles2JSTSPolygon(coordinates,zoom){
+        var polygons = [];
+        for(var i = 0; i < coordinates.length; i++){
+            var tileX = coordinates[i][0];
+            var tileY = coordinates[i][1];
+            polygons.push(tile2JSTSPolygon(tileX,tileY,zoom));
+        }
+
+        var mergedPolygon = polygons[0];
+        for(var i = 1; i < polygons.length; i++){
+            mergedPolygon = mergedPolygon.union(polygons[i]);
+        }
+        return mergedPolygon;//wktWriter.write(mergedPolygon);
+    }
+
+    function tile2JSTSPolygon(tileX,tileY,zoom){
+        var coordinates = tileToCoordinatesArray(tileX,tileY,zoom);
+        return wktReader.read(polygonCoordinates2WKT([coordinates]));
+    }
+
+    function polygonCoordinates2WKT(coordinates){
+        var wktPolygon = "";
+        for(var i = 0; i < coordinates.length;i++){
+
+            wktPolygon += "(";
+            var pointsArray = coordinates[i];
+            for(var j = 0; j < pointsArray.length;j++){
+                wktPolygon += pointsArray[j][0] + " " + pointsArray[j][1];
+                if(j != pointsArray.length - 1){
+                    wktPolygon += ",";
+                }
+            }
+            wktPolygon += ")";
+            if(i != coordinates.length - 1){
+                wktPolygon += ","
+            }
+        }
+        wktPolygon = "POLYGON("+wktPolygon+")";
+        return wktPolygon;
+    }
+
+    function drawMultiTile(layerToDraw,coordinates,properties,color){
+        for(var i = 0; i < coordinates.length; i++){
+            drawTile(layerToDraw, coordinates[i], properties, color)
+        }
+    }
+    function drawTile(layerToDraw,coordinates,properties,color){
+        var zoom = properties.zoom;
+        var gpsCoordinates = tileToCoordinatesArray(coordinates[0],coordinates[1],zoom);
+        drawPoygon(layerToDraw,[gpsCoordinates],properties,color);
+    }
+
+    function setLabelInStyle(properties, style) {
+        if (null !== properties && properties.hasOwnProperty("label")) {
+            style.label = properties.label + "";
+            if (properties.hasOwnProperty("labelXOffset")) {
+                style.labelXOffset = properties.labelXOffset;
+            }
+            if (properties.hasOwnProperty("labelYOffset")) {
+                style.labelYOffset = properties.labelYOffset;
+            }
+        }
+    }
+
+    function drawPoygon(layerToDraw,coordinates,properties,color){
+
+        var pointsArray = [];
+        for(var i = 0; i < coordinates.length;i++){
+            pointsArray.push(getPointsArray(coordinates[i]));
+        }
+        var style = {
+                fillColor: color,
+                stroke: false,
+                strokeColor: color,
+                strokeWidth: 3,
+                fillOpacity: 0.8,
+                pointRadius: 6
+            };
+        setLabelInStyle(properties, style);
+
+        var linearRings = [];
+        for(var i = 0; i < pointsArray.length;i++){
+             linearRings.push(new OpenLayers.Geometry.LinearRing(pointsArray[i]));
+        }
+
+        var polygonFeatures = [];
+        for(var i = 0; i < linearRings.length; i++){
+             polygonFeatures.push(new OpenLayers.Feature.Vector(linearRings[i], null, style));
+        }
+        polygonFeatures[0].properties = properties;
+        layerToDraw.addFeatures(polygonFeatures);
+    }
+
+    function drawLineString(layerToDraw,coordinates,properties,color){
+        var points = getPointsArray(coordinates);
+
+        var style = {
+            fillColor: color,
+            stroke: true,
+            strokeColor: color,
+            strokeWidth: 3,
+            fillOpacity: 0.9,
+            pointRadius: 6,
+        };
+        setLabelInStyle(properties, style);
+
+        var line = new OpenLayers.Geometry.LineString(points);
+        var lineFeature = new OpenLayers.Feature.Vector(line, null, style);
+        lineFeature.properties = properties;
+
+        layerToDraw.addFeatures([lineFeature]);
+    }
+
+    function drawPoint(layerToDraw,lon,lat, properties,color)
+    {
+        var p = new OpenLayers.Geometry.Point(lon, lat).transform(gpsProjection,  map.getProjectionObject());
+        var style = {
+                    fillColor: color,
+                    stroke: false,
+                    strokeColor: color,
+                    strokeWidth: 5,
+                    fillOpacity: 1,
+                    pointRadius: 6
+                };
+        setLabelInStyle(properties, style);
+
+        var feature = new OpenLayers.Feature.Vector(p, null, style);
+        feature.properties = properties;
+        layerToDraw.addFeatures([feature]);
+    }
+
+
+    function getPointsArray(coordinates)
+    {
+        var points = [];
+        for(var i = 0; i < coordinates.length; i++){
+            var point = new OpenLayers.Geometry.Point(coordinates[i][0], coordinates[i][1]).transform(gpsProjection,  map.getProjectionObject());
+            points.push(point);
+        }
+        return points;
+    }
+
+</script></head>
+
+<body onload="init()" id="b">
+    <div id="map" style="width: 100%; height: 100%"></div>
+    <script type="text/javascript">
+
+        function mouseOver(){
+            $("#panelContainer").css("opacity",1);
+        }
+        function mouseOut(){
+            $("#panelContainer").css("opacity",0.8);
+        }
+        function clearAllFeatures(){
+            destroyFeatures();
+        }
+        function draw(){
+            $("#draw").attr("disabled",true);
+            setTimeout(draw2,0);
+        }
+        function clearSelections() {
+            $("#selections").text("");
+        }
+
+        function draw2(){
+            try{
+                var clearAll = $("#clearFlag").is(':checked');
+                if(clearAll){
+                    destroyFeatures();
+                }
+
+                var geoJson = null;
+                var textType = $('input:radio[name="textType"]:checked').val();
+                if(textType == "geojson"){
+                    geoJson = JSON.parse($('#text').val());
+                }else{
+                    geoJson = wkt2GeoJson($('#text').val());
+                }
+
+                var drawStyle = $('input:radio[name="drawStyle"]:checked').val();
+                geoJson.DrawStyle = drawStyle;
+                var colorStyle = $('input:radio[name="colorStyle"]:checked').val();
+                if(colorStyle == "manual"){
+                    geoJson.color = '#' + $('#picker').val();
+                }
+                drawObj(geoJson);
+            }catch(error){
+                alert(error);
+            }
+            $("#draw").attr("disabled",false);
+
+        }
+        function parseFileType(fileName){
+            var lowerFileName = fileName.toLowerCase();
+            var csv = ".csv";
+            var json = ".json";
+            var geojson = ".geojson";
+            if(lowerFileName.substring(lowerFileName.length - csv.length) == csv){
+                return FileType.CSV;
+            }else if(lowerFileName.substring(lowerFileName.length - json.length) == json || lowerFileName.substring(lowerFileName.length - geojson.length) == geojson){
+                return FileType.JSON;
+            }else{
+                return FileType.Unknown;
+            }
+        }
+            //var fileType = parseFileType(fileName);
+        function handleFile(fileName,content){
+            var fileType = parseFileType(fileName);
+            switch(fileType){
+                case FileType.CSV : processCSVFile(fileName,content);break;
+                case FileType.JSON : processJSONFile(fileName,content);break;
+                default:alert("only supports json and csv file!!!");break;
+            }
+        }
+        function processCSVFile(fileName,content){
+            var json = convertCSVFile2JSON(fileName,content);
+            if(json.ErrCode == 0){
+                $("#geojson").attr("checked", "checked");
+                $("#text").text(JSON.stringify(json.json));
+            }else{
+                alert(json.ErrMes);
+            }
+
+        }
+        function processJSONFile(fileName,content){
+            $("#geojson").attr("checked", "checked");
+            $("#text").text(content);
+        }
+
+    </script>
+    <div id="panelContainer" onmouseover="mouseOver()" onmouseout="mouseOut()">
+        <!-- <div>Control Panel Beta:</div> -->
+        <div>
+        <table>
+            <tr>
+                <td style="vertical-align:top;">
+                    <div style="width:300px;"><legend>Style Configuration</legend>
+                        <label><input name="drawStyle" type="radio" value="geojson" checked="checked" />Whole</label>
+                        <label><input name="drawStyle" type="radio" value="GroupFeature" />Group</label>
+                        <label><input name="drawStyle" type="radio" value="EveryFeature" />Single</label>
+                        <br>
+                        <legend>Color</legend>
+                        <label><input name="colorStyle" type="radio" value="random" checked="checked" />Random</label>
+                        <label><input name="colorStyle" type="radio" value="manual" onclick="" />Input</label>
+                        <input type="text" id="picker" ></input>
+
+                        <script type="text/javascript">
+                            $('#picker').colpick({
+                                layout:'hex',
+                                submit:0,
+                                flat:false,
+                                colorScheme:'dark',
+                                onChange:function(hsb,hex,rgb,fromSetColor) {
+                                    if(!fromSetColor) $('#picker').val(hex).css('border-color','#'+hex);
+                                }
+                            })
+                            .keyup(function(){
+                                $(this).colpickSetColor(this.value);
+                            });
+                        </script>
+                        <br>
+                        <label><input type="checkbox" id="clearFlag" checked="checked" />Clear old features</label>
+                    </div>
+                </td>
+                <td>
+                    <div style="width:300px;">
+                    <label><input name="textType" type="radio" value="geojson" id="geojson" checked="checked" /><a href="http://www.geojson.org/geojson-spec.html" target="_blank">GeoJson</a></label>
+                    <label><input name="textType" type="radio" value="wkt" /><a href="http://en.wikipedia.org/wiki/Well-known_text" target="_blank">Well-known text</a> </label>
+                    <textarea id="text" style="width:100%;height:170px;"></textarea>
+                    </div>
+                </td>
+                <td>
+                    <div style="width:140px;">
+                        <button id="draw" onclick="draw()">Draw</button><br>
+                        <button id="clear" onclick="clearAllFeatures()">Clear All Features</button>
+                    </div>
+                </td>
+                <td>
+                    <div style="width:500px;">
+                        Feature Properties:
+                        <textarea id="properties" style="width:100%;height:170px;" readonly="true"></textarea>
+                    </div>
+                </td>
+                <td>
+                    <div style="width:10px;"/>
+                </td>
+                <td>
+                    <div style="width:200px;">
+                        Double-click Selections:
+                        <textarea id="selections" style="width:100%;height:170px;"></textarea>
+                    </div>
+                </td>
+            </tr>
+        </table>
+        </div>
+    </div>
+</body>
+</html>

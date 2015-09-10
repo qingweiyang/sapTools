@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <style type="text/css">
+
+</style>
+    
+    <script src="../js/OpenLayers-2.13.1/OpenLayers.js"></script>
+    <script src="../js/OpenLayers-2.13.1/OpenStreetMap.js"></script>
+    <script src="../js/jquery-2.0.3.min.js"></script>
+    <script src="../js/hashmap.js"></script>
+    <script src="../js/osm-map.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/jsts/javascript.util.js"></script>
+    <script src="../js/jsts/jsts.js"></script>
+    <script src="js/RoadsSorting.js"></script>
+    <script src="js/InitMapLayers.js"></script>
+    <script src="js/InitControlsandEvents.js"></script>
+    <script src="js/FilesHandle.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/drawFeatures.js"></script>
+    <script src="js/orderByDirection.js"></script>
+    <script src="js/validateRoads.js"></script>
+    <script src="js/js-extension.js"></script>
+    <script src="jqueryui/jquery-ui.js"></script>
+    <link rel="stylesheet" href="jqueryui/jquery-ui.css" type="text/css" />
+    <link rel="stylesheet" href="style.css" type="text/css" />
+    <script type="text/javascript">
+
+</script></head>
+
+<body onload="init()" id="b">
+    <div id="map" style="width: 100%; height: 100%"></div>
+    <div>
+    <div id="roads_info"><ul></ul></div>
+    <div id="accordionContainer"><div id="accordion">
+    <h5  class="dropDiv">快速路</h5>
+    <div id="level1"  class="roadLevelList">
+    <ul class="connectedSortable">
+      </ul>
+      
+    </div>
+    
+    <h5  class="dropDiv">主干路</h5>
+    <div id="level2" class="roadLevelList" >
+    <ul class="connectedSortable">
+      </ul>
+    </div>
+    <h5 class="dropDiv">次干路</h5>
+    <div id="level3"  class="roadLevelList">
+      <ul class="connectedSortable">
+      </ul>
+    </div>
+     <h5 class="dropDiv">其他</h5>
+    <div id="level4"  class="roadLevelList">
+      <ul id="level4ul" class="connectedSortable">
+      </ul>
+    </div>
+    </div></div>
+    <div id="controls">
+    <button onclick="orderByRoadLevel()">Order</button>
+    <button onclick="autoCompletRoads()">Autocomplete Roads</button>
+    <button style="right:1%;"><a onclick="exportRoadsList(this)" download="RoadList.csv" href="#">Export RoadList</a></button>
+        <ul id="controlToggle">
+            <li>
+                    <input type="radio" name="type" value="none" id="noneToggle" onclick="toggleControl(this);" checked="checked" />
+                    <label for="noneToggle">navigate</label>
+            </li>
+            <li style="display:none;">
+                    <input type="radio" name="type" value="box" id="boxToggle" onclick="toggleControl(this);" />
+                    <label for="boxToggle">draw box</label>
+            </li>
+            <li>
+                    <input type="radio" name="type" value="select" id="selectToggle" onclick="toggleControl(this);" />
+                    <label for="selectToggle">remove feature</label>
+            </li>
+        </ul>
+    </div>
+    <div id="confirmSelection"><button id="confirmSelectionBtn" onclick="confirmSelectedRoad()">Confirm Road</button>
+    <button id="clear" onclick="clearAllFeatures()">Clear All Features</button></div>
+    <div id="exportResultArea">
+        <textarea id="showModifiedRoads" style="width:100%;height:90%;"></textarea>
+    </div>
+    <div id="resultButtons">    <button onclick="triggerValidateRoads()">Validate Roads</button>
+        <button><a onclick="exportResultList(this)" download="Result.csv" href="#">Export Results</a></button></div>
+    </div>
+</body>
+</html>

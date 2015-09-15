@@ -42,3 +42,28 @@ label {
 .form-control {
 	height: 100%;
 }
+
+.button-put {
+	padding-bottom: 10px;
+}
+
+#tip {
+    height: 70px;
+    background-color: #fff;
+    padding-left: 10px;
+    padding-right: 10px;
+    position: absolute;
+    font-size: 12px;
+    right: 10px;
+    bottom: 30px;
+    border-radius: 3px;
+    line-height: 30px;
+    border: 1px solid #ccc;
+}
+
+#tip input {
+    border: 1px solid #ddd;
+    height: 23px;
+    border-radius: 3px;
+    outline: none;
+ }

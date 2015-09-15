@@ -6,6 +6,8 @@
  */
 var resLine  = ''; //结果表格对象
 
+var cityName = "南京市";
+
 var map = new AMap.Map("mapContainer", {
 	resizeEnable: true,
     view: new AMap.View2D({
@@ -371,4 +373,150 @@ function transferSearch() {
         }
       });
     });
+}
+
+//------------------------------关键字查询 start----------------------------------------------//
+function placeSearch(){
+	var val = $("#option4").val();
+    var MSearch;
+    AMap.service(["AMap.PlaceSearch"], function() {       
+        MSearch = new AMap.PlaceSearch({ //构造地点查询类
+            pageSize:10,
+            pageIndex:1,
+            city:"南京市" //城市
+        });
+        //关键字查询
+        MSearch.search(val, function(status, result){
+        	if(status === 'complete' && result.info === 'OK'){
+        		keywordSearch_CallBack(result);
+        	}
+        }); 
+    });
+}
+
+var windowsArr = new Array();
+var marker = new Array();
+
+//添加marker&infowindow   
+function addmarker(i, d) {
+    var lngX = d.location.getLng();
+    var latY = d.location.getLat();
+    var markerOption = {
+        map:map,
+        icon:"http://webapi.amap.com/images/" + (i + 1) + ".png",
+        position:new AMap.LngLat(lngX, latY),
+        topWhenMouseOver:true
+
+    };
+    var mar = new AMap.Marker(markerOption);         
+    marker.push(new AMap.LngLat(lngX, latY));
+ 
+    var infoWindow = new AMap.InfoWindow({
+        content:"<h3><font color=\"#00a6ac\">  " + (i + 1) + ". " + d.name + "</font></h3>" + TipContents(d.type, d.address, d.tel),
+        size:new AMap.Size(300, 0),
+        autoMove:true, 
+        offset:new AMap.Pixel(0,-20)
+    });
+    windowsArr.push(infoWindow);
+    var aa = function (e) {infoWindow.open(map, mar.getPosition());};
+    AMap.event.addListener(mar, "mouseover", aa);
+}
+
+//回调函数
+function keywordSearch_CallBack(data) {
+    var resultStr = "";
+    var poiArr = data.poiList.pois;
+    var resultCount = poiArr.length;
+    for (var i = 0; i < resultCount; i++) {
+        resultStr += "<div id='divid" + (i + 1) + "' onmouseover='openMarkerTipById1(" + i + ",this)' onmouseout='onmouseout_MarkerStyle(" + (i + 1) + ",this)' style=\"font-size: 12px;cursor:pointer;padding:0px 0 4px 2px; border-bottom:1px solid #C1FFC1;\"><table><tr><td><img src=\"http://webapi.amap.com/images/" + (i + 1) + ".png\"></td>" + "<td><h3><font color=\"#00a6ac\">名称: " + poiArr[i].name + "</font></h3>";
+            resultStr += TipContents(poiArr[i].type, poiArr[i].address, poiArr[i].tel) + "</td></tr></table></div>";
+            addmarker(i, poiArr[i]);
+    }
+    map.setFitView();
+}
+
+function TipContents(type, address, tel) {  //窗体内容
+    if (type == "" || type == "undefined" || type == null || type == " undefined" || typeof type == "undefined") {
+        type = "暂无";
+    }
+    if (address == "" || address == "undefined" || address == null || address == " undefined" || typeof address == "undefined") {
+        address = "暂无";
+    }
+    if (tel == "" || tel == "undefined" || tel == null || tel == " undefined" || typeof address == "tel") {
+        tel = "暂无";
+    }
+    var str = "  地址：" + address + "<br />  电话：" + tel + " <br />  类型：" + type;
+    return str;
+}
+
+function openMarkerTipById1(pointid, thiss) {  //根据id 打开搜索结果点tip
+    thiss.style.background = '#CAE1FF';
+    windowsArr[pointid].open(map, marker[pointid]);
+}
+
+function onmouseout_MarkerStyle(pointid, thiss) { //鼠标移开后点样式恢复
+    thiss.style.background = "";
+}
+
+//------------------------------关键字查询 end------------------------------------------------//
+
+
+//-------------------------------道路查询 start----------------------------------------------//
+
+function roadSearch() {
+	var roadLineName = $("#option2").val();
+    var MSearch;
+    AMap.service(["AMap.RoadInfoSearch"], function() {        
+        MSearch = new AMap.RoadInfoSearch({ //构造地点查询类
+            pageSize:10,
+            pageIndex:1,
+            city:cityName //城市
+        });
+        //关键字查询
+        MSearch.roadInfoSearchByRoadName(roadLineName, function(status, result){
+        	if(status === 'complete' && result.info === 'OK'){
+        		roadSearch_CallBack(result);
+        	}
+        }); 
+    });
+}
+//回调函数
+function roadSearch_CallBack(data) {
+    var resultStr = "";
+    var roadArr = data.roadInfo;
+    var resultCount = roadArr.length;
+	var pathArr = [];
+	var pathArr1 = [];
+    for (var i = 0; i < resultCount; i++) {
+         pathArr = roadArr[i].path;
+
+        for(var j = 0; j < pathArr.length; j++){
+            var e = pathArr[j];
+            pathArr1 = [];
+            for(l = 0;l < e.length; l++){
+                var path = e[l];
+                pathArr1.push(path);
+            }
+            var polyline = new AMap.Polyline({
+                map: map,
+                path: pathArr1,
+                strokeColor: "#CC0000"//线颜色
+            });
+        }
+    }
+
+    map.setFitView();
+}
+
+//-------------------------------道路查询 end------------------------------------------------//
+
+//为地图注册click事件获取鼠标点击出的经纬度坐标
+function catchLngLat() {
+	$("#tip").show();
+	var clickEventListener = map.on( 'click', function(e) {
+	    var lng = e.lnglat.getLng();
+	    var lat = e.lnglat.getLat();
+	    console.log("lng,lat:" + lng + "," + lat);
+	    $("#lnglat").text("lng,lat:" + lng + "," + lat);
+	});
 }

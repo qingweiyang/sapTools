@@ -11,7 +11,12 @@
 <body>
 <div id="optionContainer">
 	<div class="option">
-		<button onclick="mapclear();">清空地图覆盖物与查询结果</button>
+		<div class="button-put">
+			<button onclick="mapclear();">清空地图覆盖物与查询结果</button>
+		</div>
+		<div>
+			<button onclick="catchLngLat();">鼠标左键获取坐标</button>
+		</div>
 	</div>
 	<div class="option">
 		<textarea id="option1" style="height: 40px; width: 90%;">南堡公园,金陵六村</textarea>
@@ -19,14 +24,27 @@
 	</div>
 	<div class="option">
 		<textarea id="option2" style="height: 30px; width: 90%;">1路</textarea>
-		<button onclick="lineSearch();">根据路线名画线路</button>
+		<div>
+			<button onclick="lineSearch();">根据公交路线名画线路</button>
+			<button onclick="roadSearch();">根据路名名画线路</button>
+		</div>
 	</div>
 		<div class="option">
 		<textarea id="option3" style="height: 30px; width: 90%;">南堡公园,金陵六村</textarea>
 		<button onclick="transferSearch();">根据两点画建议路线</button>
 	</div>
+	<div class="option">
+		<textarea id="option4" style="height: 30px; width: 90%;">红星家具城北侧</textarea>
+		<button onclick="placeSearch();">关键字查询</button>
+	</div>
 </div>
 <div id="mapContainer"></div>
+<div id="tip" style="display: none;">
+    <b>鼠标左键在地图上单击获取坐标</b>
+    <br>
+
+    <div id="lnglat"></div>
+</div>
 <!--  
     <div id="mapContainer"></div>
     <div id="tip">

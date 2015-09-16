@@ -1,0 +1,30 @@
+body {
+	padding: 30px;
+}
+
+.thumbnail {
+  margin-bottom: 0;
+  padding: 12px;
+  /**
+  border-top-right-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+  **/
+  border: 0;
+}
+
+#drop{
+  border:2px dashed #bbb;
+  -moz-border-radius:5px;
+  -webkit-border-radius:5px;
+  border-radius:5px;
+  padding:25px;
+  text-align:center;
+  font:20pt bold,"Vollkorn";color:#bbb
+}
+
+#table_content{
+overflow:auto;
+}
+

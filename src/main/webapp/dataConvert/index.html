@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<!-- 这个文件是解析指定xlsx文件的数据的，核心数据结构为resultGlobal数组，它是二维数组，与xlsx文件的row一一对应，其中xlsx文件第一行对应resultGlobal[0] -->
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<title>data show</title>
+
+	<!-- Bootstrap -->
+    <link href="../lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <!--  awesome -->
+    <link rel="stylesheet" href="../lib/font-awesome-4.3.0/css/font-awesome.css">
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="../lib/jquery/jquery-2.1.4.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="../lib/bootstrap/js/bootstrap.min.js"></script>
+
+    <link href="../css/main.css" rel="stylesheet">
+</head>
+<body>
+	<div id = "starter">
+		<div class="row clearfix">
+			<div class="col-md-12 column">
+				<div class="alert alert-success alert-dismissable">
+					 <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+					<h4>
+						方式一（拖拽文件到下方）：
+					</h4> 
+					<div id="drop">文件拖到此处(.XLSX)</div>
+
+					<legend class="valtype"></legend>
+
+					<h4>
+						方式二（文件路径选择）：
+					</h4> 
+					<div>
+						<input type="file" name="xlfile" id="xlf" />
+					</div>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+
+</body>
+
+<!-- uncomment the next line here and in xlsxworker.js for encoding support -->
+<!--<script src="dist/cpexcel.js"></script>-->
+<script src="../lib/js-xlsx-master/shim.js"></script>
+<script src="../lib/js-xlsx-master/jszip.js"></script>
+<script src="../lib/js-xlsx-master/xlsx.js"></script>
+<!-- uncomment the next line here and in xlsxworker.js for ODS support -->
+<script src="../lib/js-xlsx-master/dist/ods.js"></script>
+
+<script src="index.js"></script>
+    
+</html>

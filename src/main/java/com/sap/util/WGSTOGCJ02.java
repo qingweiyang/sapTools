@@ -12,9 +12,9 @@ public class WGSTOGCJ02 {
 	private static double ee = 0.00669342162296594323D;// WGS 偏心率的平方
 
 	public static void main(String[] args) {
-		double lon = 118.809666;
-		double lat = 32.03225;
-		
+		double lon = 118.755859;
+		double lat = 32.060416;
+		//118.755859,32.060416
 		Map<String, Double> res = new WGSTOGCJ02().gcj2wgs(lon, lat);
 		System.out.println(res.get("lon"));
 		System.out.println(res.get("lat"));

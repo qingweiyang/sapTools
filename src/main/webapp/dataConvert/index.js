@@ -233,7 +233,7 @@ function to_formulae(workbook) {
 	var result = [];
 	workbook.SheetNames.forEach(function(sheetName) {
 		var formulae = X.utils.get_formulae(workbook.Sheets[sheetName]);
-		if(formulae.length > 0){
+		if(formulae.length > 0 && sheetName == "result"){
 			//result.push("SHEET: " + sheetName);
 			//result.push("");
 			result = formulae;
@@ -300,8 +300,14 @@ function toGeoJson(res) {
 			var geometry = {};
 			geometry.type = "Point";
 			var point = [];
-			point[0] = pro[4].split(",")[0];
-			point[1] = pro[4].split(",")[1];
+			point[0] = Number(pro[4].split(",")[0]);
+			point[1] = Number(pro[4].split(",")[1]);
+			var convertP = gcj2wgs(point[0], point[1]);
+//			console.log(Number(pro[4].split(",")[0]));
+//			console.log(convertP);
+//			console.log("|||||||");
+			point[0] = convertP[0];
+			point[1] = convertP[1];
 			geometry.coordinates = point;
 			var properties = {};
 			properties.id = pro[0];
